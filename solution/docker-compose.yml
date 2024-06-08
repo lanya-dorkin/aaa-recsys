@@ -1,0 +1,58 @@
+version: '3.8'
+x-environment-defaults: &environment-defaults
+  DEBUG: "True"
+  SECRET_KEY: "aaa_322"
+  FLASK_PORT: 8000
+  POSTGRES_DB: "aaadb"
+  POSTGRES_USER: "POSTGRES_USER"
+  POSTGRES_PASSWORD: "POSTGRES_PASSWORD"
+  POSTGRES_PORT: 5432
+  POSTGRES_HOST: "postgres-db"
+  REDIS_PORT: 6379
+  REDIS_HOST: "redis"
+
+services:
+  postgres-db:
+    image: postgres:13-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_DB: aaadb
+      POSTGRES_USER: POSTGRES_USER
+      POSTGRES_PASSWORD: POSTGRES_PASSWORD
+    ports:
+      - "5432:5432"
+    networks:
+      - web-network
+    healthcheck:
+    # TODO: Well Healthcheck, need to postgres-db end configure
+    # before flask-app started
+      test: "exit 0"
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    networks:
+      - web-network
+
+  flask-app:
+    build:
+      context: ./app
+    container_name: flask-app
+    tty: true
+    ports:
+      - "8000:8000"
+    networks:
+      - web-network
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      <<: *environment-defaults
+    restart: on-failure:5
+
+networks:
+  web-network:
+    driver: bridge
