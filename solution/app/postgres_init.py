@@ -1,5 +1,6 @@
 import sqlalchemy
-from sqlalchemy import create_engine, MetaData
+from sqlalchemy import create_engine, Table, Column, Integer, String
+from sqlalchemy import MetaData, DateTime
 from sqlalchemy_utils import database_exists, create_database
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 import datetime
@@ -21,15 +22,25 @@ class Items(Base):
 
 
 def get_engine() -> sqlalchemy.engine.Engine:
-    engine = create_engine(DB_ADDRESS, echo=False)
+    engine = create_engine(DB_ADDRESS)
     if not database_exists(engine.url):
         create_database(engine.url)
     return engine
 
 
-def create_items_table(engine: sqlalchemy.engine.Engine):
+def create_items_table(engine):
     metadata_obj = MetaData()
+    _ = Table(
+        'items',
+        metadata_obj,
+        Column('id', Integer, primary_key=True),
+        Column('category_id', Integer),
+        Column('title', String),
+        Column('item_location', String),
+        Column('starttime', DateTime, default=datetime.datetime.now)
+    )
     metadata_obj.create_all(engine)
+
 
 
 def insert_to_items(session_factory: sessionmaker):
