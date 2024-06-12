@@ -6,35 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Avito AAA</title>
   <link href="/static/css/bootstrap.min.css" rel="stylesheet">
-
-  <style>
-    .bd-placeholder-img {
-      font-size: 1.125rem;
-      text-anchor: middle;
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-      user-select: none;
-    }
-
-    @media (min-width: 768px) {
-      .bd-placeholder-img-lg {
-        font-size: 3.5rem;
-      }
-    }
-
-    .skinny {
-      padding-left: 0;
-    }
-
-    .footer__info p {
-      color: #fff;
-    }
-
-    .fs-16 {
-      font-size: 1.1rem;
-    }
-  </style>
+  <link href="/static/css/index.css" rel="stylesheet">
 </head>
 
 <body class="bg-light min-vh-100">
@@ -97,9 +69,12 @@
                   {{ recommendation.title }}
                 </p>
                 <p class="card-text">
-                  {{ recommendation.description }}
+                  {{ recommendation.category }}
                 </p>
-                <small class="text-muted">{{ recommendation.start_date }}</small>
+                <div>
+                  <small class="text-dark ">{{ recommendation.item_location }}</small>
+                  <small class="text-muted">{{ recommendation.starttime }}</small>
+                </div>
                 <div class="d-flex justify-content-between align-items-center border-top border-2">
 
                   <form class="mt-1" id="make_action_for_{{ recommendation.item_id }}" method="post" enctype="multipart/form-data" action="/make_action">

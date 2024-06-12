@@ -53,6 +53,24 @@ services:
       <<: *environment-defaults
     restart: on-failure:5
 
+  locust_master:
+    image: locustio/locust
+    ports:
+     - "8089:8089"
+    volumes:
+      - ./locust/locustfile.py:/mnt/locust/locustfile.py
+    command: -f /mnt/locust/locustfile.py --master -H http://locust_master:8089
+    networks:
+      - web-network
+
+  locust_worker:
+    image: locustio/locust
+    volumes:
+      - ./locust/locustfile.py:/mnt/locust/locustfile.py
+    command: -f /mnt/locust/locustfile.py --worker --master-host locust_master
+    networks:
+      - web-network
+
 networks:
   web-network:
     driver: bridge
