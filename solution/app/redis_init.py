@@ -1,8 +1,10 @@
-import redis
 import random
 import datetime
 import os
 import pickle
+import redis
+from tqdm import tqdm
+import pandas as pd
 
 
 def mock_history(user_id: int) -> bytes:
@@ -16,9 +18,9 @@ def mock_history(user_id: int) -> bytes:
 
 
 def init_data(redis_client: redis.Redis):
-    # TODO: Read real data?
-    for user_id in range(1, 100):
-        history = mock_history(user_id)
+    users = pd.read_pickle('data/to_redis.pkl')
+    for user_id, items in tqdm(users.items(), mininterval=5, total=len(users)):
+        history = pickle.dumps(items)
         redis_client.set(user_id, history)
 
 
@@ -26,4 +28,5 @@ if __name__ == '__main__':
     redis_client = redis.Redis(host=os.environ.get('REDIS_HOST'),
                                port=os.environ.get('REDIS_PORT'),
                                decode_responses=False)
+    print('start process of inserting users')
     init_data(redis_client)

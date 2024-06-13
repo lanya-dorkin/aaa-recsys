@@ -1,9 +1,10 @@
+import datetime
 import sqlalchemy
-from sqlalchemy import create_engine, Table, Column, Integer, String
-from sqlalchemy import MetaData, DateTime
+from sqlalchemy import create_engine, Table, Column, Integer, BIGINT, String, MetaData, DateTime
 from sqlalchemy_utils import database_exists, create_database
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
-import datetime
+import pandas as pd
+from tqdm import tqdm
 from config import DB_ADDRESS
 
 
@@ -33,7 +34,7 @@ def create_items_table(engine):
     _ = Table(
         'items',
         metadata_obj,
-        Column('id', Integer, primary_key=True),
+        Column('id', BIGINT, primary_key=True),
         Column('category_id', Integer),
         Column('title', String),
         Column('item_location', String),
@@ -42,22 +43,29 @@ def create_items_table(engine):
     metadata_obj.create_all(engine)
 
 
-
 def insert_to_items(session_factory: sessionmaker):
-    # TODO: Read real Data
-    with session_factory() as session:
-        for i in range(30):
-            item = Items(
-                category_id=60,
-                title=f'Title_{i}',
-                item_location=f'Address for {i}',
-            )
+    items = pd.read_parquet('data/to_postgres.parquet')
+    session = session_factory()
+    for idx, item in tqdm(items.iterrows(), mininterval=5, total=len(items)):
+        item = Items(
+            id=item['item_id'],
+            category_id=item['category_id'],
+            title=item['title'],
+            item_location=str(item['location_id']),
+        )
+        try:
             session.add(item)
-        session.commit()
+            if idx % 1000 == 0:
+                session = session_factory()
+                session.commit()
+        except Exception as e:
+            session.rollback()
+            print(e)
 
 
 if __name__ == '__main__':
     engine = get_engine()
     create_items_table(engine)
     session_factory = sessionmaker(engine)
+    print('start process of inserting items')
     insert_to_items(session_factory)
