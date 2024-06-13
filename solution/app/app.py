@@ -33,7 +33,7 @@ def get_user():
     if history is None:
         return redirect(url_for('index'))
     session['history'] = history
-    recommendations = get_recommendations(session['history'], db)
+    recommendations = get_recommendations(db, session['history'])
     session['user_id'] = user_id
     session['recommendations'] = recommendations
     return redirect(url_for('index'))
@@ -42,7 +42,7 @@ def get_user():
 @app.route('/create_user', methods=['POST'])
 def create_user():
     user_id = create_new_user(redis_client)
-    recommendations = get_recommendations([], db)
+    recommendations = get_recommendations(db, [])
     session['user_id'] = user_id
     session['history'] = []
     session['recommendations'] = recommendations
@@ -51,9 +51,9 @@ def create_user():
 
 @app.route('/make_action', methods=['POST'])
 def make_action():
-    eid = request.form.get('eid')
-    x_eid = request.form.get('x_eid')
-    item_id = request.form.get('item_id')
+    eid = int(request.form.get('eid'))
+    x_eid = int(request.form.get('x_eid'))
+    item_id = int(request.form.get('item_id'))
     event_date = datetime.datetime.now()
     session['history'].append({
         'item_id': item_id,
@@ -68,7 +68,7 @@ def make_action():
 
 @app.route('/update_recommendations', methods=['POST'])
 def update_recommendations():
-    recommendations = get_recommendations(session['history'], db)
+    recommendations = get_recommendations(db, session['history'])
     session['recommendations'] = recommendations
     return redirect(url_for('index'))
 

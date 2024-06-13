@@ -5,7 +5,7 @@ import os
 import pickle
 
 
-def mock_history(user_id):
+def mock_history(user_id: int) -> bytes:
     h = {
         'item_id': random.randint(1, 9),
         'event_date': datetime.datetime.now(),
@@ -15,7 +15,7 @@ def mock_history(user_id):
     return pickle.dumps([h for _ in range(user_id)])
 
 
-def init_data(redis_client):
+def init_data(redis_client: redis.Redis):
     # TODO: Read real data?
     for user_id in range(1, 100):
         history = mock_history(user_id)
