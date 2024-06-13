@@ -10,6 +10,8 @@ x-environment-defaults: &environment-defaults
   POSTGRES_HOST: "postgres-db"
   REDIS_PORT: 6379
   REDIS_HOST: "redis"
+  MODEL_SERVICE_HOST: "model-flask-app"
+  MODEL_SERVICE_PORT: 8003
 
 services:
   postgres-db:
@@ -49,6 +51,19 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+    environment:
+      <<: *environment-defaults
+    restart: on-failure:5
+
+  model-flask-app:
+    build:
+      context: ./model_service
+    container_name: model_service
+    tty: true
+    ports:
+      - "8003:8003"
+    networks:
+      - web-network
     environment:
       <<: *environment-defaults
     restart: on-failure:5

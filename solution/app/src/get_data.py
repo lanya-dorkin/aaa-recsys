@@ -1,10 +1,13 @@
-from postgres_init import Items
-import pickle
-import pandas as pd
-
+import os
 from typing import List, Dict, Any
-import redis
+import pickle
+from datetime import datetime
+import pandas as pd
+import requests
 from flask_sqlalchemy import SQLAlchemy
+import redis
+from postgres_init import Items
+
 
 
 categories_mapping: Dict[int, str] = pd.read_csv(
@@ -31,13 +34,24 @@ def create_new_user(redis_client: redis.Redis) -> int:
 
 
 def get_item_info(db: SQLAlchemy, item_id: int) -> Dict[str, Any]:
-    item = db.get_or_404(Items, item_id,
-                         description=f'Item с индексом {item_id} не найден.')
+    try:
+        item = db.get(Items, item_id,
+                            description=f'Item с индексом {item_id} не найден.')
+    except:
+        item = None
+
+    if item is None:
+        return {
+            'item_id': item_id,
+            'title': 'Не найден',
+            'category': get_category_by_id(0),
+            'starttime': datetime.now().strftime('%d/%m/%Y, %H:%M:%S')
+        }
     return {
         'item_id': item.id,
         'title': item.title,
         'category': get_category_by_id(item.category_id),
-        'starttime': item.starttime.strftime("%d/%m/%Y, %H:%M:%S")
+        'starttime': item.starttime.strftime('%d/%m/%Y, %H:%M:%S')
     }
 
 
@@ -54,7 +68,28 @@ def mock_recommendations():
 
 
 def get_model_predictions(history: List[Dict[str, Any]]) -> List[int]:
-    return mock_recommendations()
+    model_service_host = os.environ.get('MODEL_SERVICE_HOST')
+    model_service_port = os.environ.get('MODEL_SERVICE_PORT')
+
+    for item in history:
+        item['event_date'] = item['event_date'].strftime('%Y/%m/%d, %H:%M:%S')
+
+    if not model_service_host or not model_service_port:
+        raise ValueError("Model service host or port is not set in environment variables")
+
+    url = f"http://{model_service_host}:{model_service_port}/get_prediction"
+    response = requests.post(url, json=history)
+
+    if response.status_code != 200:
+        raise Exception(f"Request to model service failed with status code {response.status_code}")
+
+    response_json = response.json()
+    predictions_str = response_json.get('predictions')
+
+    if predictions_str is None:
+        raise ValueError("'prediction' field is missing in the response")
+    
+    return [int(pred) for pred in predictions_str]
 
 
 def get_recommendations(db: SQLAlchemy,
